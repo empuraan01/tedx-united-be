@@ -145,10 +145,7 @@ coverage/
 # Documentation build
 docs/build/
 
-# Local configuration files
-config/local.js
-config/local.json
-config/credentials.json
+
 
 # SSL certificates
 *.pem
