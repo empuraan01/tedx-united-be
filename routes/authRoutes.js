@@ -29,18 +29,6 @@ router.get('/success', isLoggedIn, (req, res) => {
 router.get('/failure', authController.authFailure);
 
 
-router.get('/debug-client', (req, res) => {
-    const clientUrl = getClientOrigin();
-    res.json({
-        clientUrl: clientUrl,
-        redirectUrl: `${clientUrl}/?success=true`,
-        env: {
-            CLIENT_URL: process.env.CLIENT_URL,
-            NODE_ENV: process.env.NODE_ENV
-        }
-    });
-});
-
 router.get('/google',
     passport.authenticate('google', {
         scope: ['email', 'profile']
@@ -48,21 +36,13 @@ router.get('/google',
 );
 
 router.get('/google/callback',
-    (req, res, next) => {
-        console.log('Callback received with query:', req.query);
-        console.log('Callback received with url:', req.url);
-        next();
-    },
     passport.authenticate('google', {
         failureRedirect: '/auth/failure',
         failureMessage: true
     }),
     (req, res) => {
-        console.log('OAuth authentication successful');
         const clientUrl = getClientOrigin();
-        const redirectUrl = `${clientUrl}/?success=true`;
-        console.log('OAuth Success - Redirecting to:', redirectUrl);
-        res.redirect(redirectUrl);
+        res.redirect(`${clientUrl}/?success=true`);
     }
 );
 
