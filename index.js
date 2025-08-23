@@ -8,11 +8,11 @@ const { connectDB } = require('./config/db');
 require('./config/passport');
 
 const app = express();
-const { getClientOrigin } = require('./config/client');
+
 
 
 app.use(cors({
-    origin: getClientOrigin(),
+    origin: "https://tedx-united-fe.vercel.app",
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
