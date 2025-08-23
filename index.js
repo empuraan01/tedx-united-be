@@ -6,6 +6,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const { connectDB } = require('./config/db');
 require('./config/passport');
+const jwtAuthMiddleware = require('./middleware/jwtAuth');
 
 const app = express();
 
@@ -40,6 +41,9 @@ app.use(session({
 
 app.use(passport.initialize());
 app.use(passport.session());
+
+// Allow JWT-based auth alongside session auth for API requests
+app.use(jwtAuthMiddleware);
 
 const port = process.env.PORT || 8000;
 

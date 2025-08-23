@@ -42,7 +42,12 @@ router.get('/google/callback',
     }),
     (req, res) => {
         const clientUrl = getClientOrigin();
-        res.redirect(`${clientUrl}/?success=true`);
+        // Prefer JWT token for cross-site auth without cookies
+        const token = req.user && req.user.jwt ? req.user.jwt : '';
+        const redirectUrl = token
+            ? `${clientUrl}/?success=true&token=${encodeURIComponent(token)}`
+            : `${clientUrl}/?success=true`;
+        res.redirect(redirectUrl);
     }
 );
 
