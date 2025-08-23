@@ -48,13 +48,21 @@ router.get('/google',
 );
 
 router.get('/google/callback',
+    (req, res, next) => {
+        console.log('Callback received with query:', req.query);
+        console.log('Callback received with url:', req.url);
+        next();
+    },
     passport.authenticate('google', {
         failureRedirect: '/auth/failure',
         failureMessage: true
     }),
     (req, res) => {
+        console.log('OAuth authentication successful');
         const clientUrl = getClientOrigin();
-        res.redirect(`${clientUrl}/?success=true`);
+        const redirectUrl = `${clientUrl}/?success=true`;
+        console.log('OAuth Success - Redirecting to:', redirectUrl);
+        res.redirect(redirectUrl);
     }
 );
 
