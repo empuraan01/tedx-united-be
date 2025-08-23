@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const passport = require('passport');
 const authController = require('../controllers/authController');
+const { getClientOrigin } = require('../config/client');
 
 const isLoggedIn = (req, res, next) => {
     if (req.user) {
@@ -27,6 +28,19 @@ router.get('/success', isLoggedIn, (req, res) => {
 
 router.get('/failure', authController.authFailure);
 
+
+router.get('/debug-client', (req, res) => {
+    const clientUrl = getClientOrigin();
+    res.json({
+        clientUrl: clientUrl,
+        redirectUrl: `${clientUrl}/?success=true`,
+        env: {
+            CLIENT_URL: process.env.CLIENT_URL,
+            NODE_ENV: process.env.NODE_ENV
+        }
+    });
+});
+
 router.get('/google',
     passport.authenticate('google', {
         scope: ['email', 'profile']
@@ -39,8 +53,7 @@ router.get('/google/callback',
         failureMessage: true
     }),
     (req, res) => {
-
-        const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+        const clientUrl = getClientOrigin();
         res.redirect(`${clientUrl}/?success=true`);
     }
 );
