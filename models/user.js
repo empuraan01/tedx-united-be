@@ -4,15 +4,17 @@ const jwt = require('jsonwebtoken');
 const UserSchema = new mongoose.Schema({
     googleId: {
         type: String,
-        required: true,
+        unique: true,
+        sparse: true
+    },
+    clerkId: {
+        type: String,
+        unique: true,
+        sparse: true
     },
     displayName: {
         type: String,
         required: true,
-    },
-    isAdmin:{
-        type:Boolean,
-        default:false,
     },
     email: {
         type: String,
@@ -23,8 +25,12 @@ const UserSchema = new mongoose.Schema({
         default:"",
     },
     image: {
-        data:Buffer,
-        type: String,
+        data: {
+            type: Buffer
+        },
+        type: {
+            type: String
+        }
     },
     jwt: {
         type: String,
@@ -36,10 +42,6 @@ const UserSchema = new mongoose.Schema({
     emojis:{
       type:Array,
       default:[],
-    },
-    profileimage:{
-      type:String,
-      default:"",
     },
     year:{
       type:Number

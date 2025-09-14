@@ -7,16 +7,28 @@ const cors = require('cors');
 const { connectDB } = require('./config/db');
 require('./config/passport');
 const jwtAuthMiddleware = require('./middleware/jwtAuth');
+const clerkAuth = require('./middleware/clerkAuth');
 
 const app = express();
 
 
 
+const allowedOrigins = process.env.NODE_ENV === 'production' 
+    ? ["https://tedx-united-fe.vercel.app"]
+    : ["http://localhost:3000", "https://tedx-united-fe.vercel.app"];
+
 app.use(cors({
-    origin: "https://tedx-united-fe.vercel.app",
+    origin: allowedOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: [
+        'Content-Type', 
+        'Authorization',
+        'x-clerk-user-id',
+        'x-clerk-user-name', 
+        'x-clerk-user-email',
+        'x-clerk-user-image'
+    ]
 }));
 
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -45,14 +57,19 @@ app.use(passport.session());
 // Allow JWT-based auth alongside session auth for API requests
 app.use(jwtAuthMiddleware);
 
+// Add Clerk authentication middleware
+app.use(clerkAuth);
+
 const port = process.env.PORT || 8000;
 
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileroutes');
+const galleryRoutes = require('./routes/galleryRoutes');
 
 
 app.use('/auth', authRoutes);
 app.use('/profile', profileRoutes);
+app.use('/', galleryRoutes);
 
 
 app.get("/", (req, res) => {
@@ -60,7 +77,8 @@ app.get("/", (req, res) => {
         message: "TEDx Server API",
         endpoints: {
             auth: "/auth",
-            profile: "/profile"
+            profile: "/profile",
+            albums: "/albums"
         },
         isAuthenticated: !!req.user
     });

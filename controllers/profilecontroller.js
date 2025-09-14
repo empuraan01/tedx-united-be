@@ -4,27 +4,69 @@ const profileController = {
 
     uploadProfilePicture: async (req, res) => {
         try {
+            console.log('🔄 Profile picture upload request received');
+            console.log('📁 File info:', req.file ? { 
+                fieldname: req.file.fieldname,
+                originalname: req.file.originalname,
+                mimetype: req.file.mimetype,
+                size: req.file.size 
+            } : 'No file');
+            console.log('👤 User info:', req.user ? { 
+                id: req.user._id, 
+                displayName: req.user.displayName,
+                clerkId: req.user.clerkId 
+            } : 'No user');
+            console.log('📋 Headers:', {
+                'x-clerk-user-id': req.headers['x-clerk-user-id'],
+                'x-clerk-user-name': req.headers['x-clerk-user-name']
+            });
+
             if (!req.file) {
+                console.log('❌ No file uploaded');
                 return res.status(400).json({ error: 'No file uploaded' });
             }
 
             if (!req.user) {
+                console.log('❌ User not authenticated');
                 return res.status(401).json({ error: 'User not authenticated' });
             }
 
-            await User.findByIdAndUpdate(req.user._id, {
+            console.log('💾 Updating user image in database...');
+            console.log('📊 Buffer info:', {
+                bufferSize: req.file.buffer.length,
+                bufferType: typeof req.file.buffer,
+                isBuffer: Buffer.isBuffer(req.file.buffer)
+            });
+            
+            const updatedUser = await User.findByIdAndUpdate(req.user._id, {
                 image: {
                     data: req.file.buffer,
                     type: req.file.mimetype
                 }
+            }, { new: true });
+
+            console.log('✅ Image updated successfully', { 
+                userId: updatedUser._id,
+                hasImageData: !!(updatedUser.image && updatedUser.image.data),
+                imageDataSize: updatedUser.image?.data?.length,
+                imageType: updatedUser.image?.type
+            });
+            
+            // Double-check by fetching the user again
+            const verifyUser = await User.findById(req.user._id);
+            console.log('🔍 Verification check:', {
+                userFound: !!verifyUser,
+                hasImageData: !!(verifyUser.image && verifyUser.image.data),
+                imageDataSize: verifyUser.image?.data?.length
             });
 
             res.json({ 
                 success: true, 
-                message: 'Profile picture uploaded successfully'
+                message: 'Profile picture uploaded successfully',
+                hasProfilePicture: !!(updatedUser.image && updatedUser.image.data)
             });
         } catch (error) {
-            console.error('Error uploading profile picture:', error);
+            console.error('❌ Error uploading profile picture:', error);
             res.status(500).json({ error: 'Failed to upload profile picture' });
         }
     },
@@ -52,16 +94,26 @@ const profileController = {
     getProfilePicture: async (req, res) => {
         try {
             const userId = req.params.userId;
+            console.log(`🔍 Fetching profile picture for user: ${userId}`);
+            
             const user = await User.findById(userId);
+            console.log(`👤 User found:`, user ? { 
+                id: user._id, 
+                displayName: user.displayName,
+                hasImageData: !!(user.image && user.image.data),
+                imageType: user.image?.type
+            } : 'No user found');
             
             if (!user || !user.image || !user.image.data) {
+                console.log('❌ Profile picture not found');
                 return res.status(404).json({ error: 'Profile picture not found' });
             }
             
+            console.log('✅ Sending profile picture');
             res.set('Content-Type', user.image.type);
             res.send(user.image.data);
         } catch (error) {
-            console.error('Error fetching profile picture:', error);
+            console.error('❌ Error fetching profile picture:', error);
             res.status(500).json({ error: 'Failed to fetch profile picture' });
         }
     },
@@ -92,11 +144,19 @@ const profileController = {
                 return res.status(401).json({ error: 'User not authenticated' });
             }
 
-            const user = await User.findById(req.user._id).select('-jwt -googleId -image.data');
+            // Don't exclude image.data since we need it to check hasProfilePicture
+            const user = await User.findById(req.user._id).select('-jwt -googleId');
             
             if (!user) {
                 return res.status(404).json({ error: 'User not found' });
             }
+
+            console.log('🔍 getMyProfile: Fresh user data:', {
+                id: user._id,
+                displayName: user.displayName,
+                hasImageData: !!(user.image && user.image.data),
+                imageDataSize: user.image?.data?.length
+            });
 
             res.json({
                 user: {
@@ -106,7 +166,6 @@ const profileController = {
                     nickname: user.nickname,
                     isAdmin: user.isAdmin,
                     emojis: user.emojis,
-                    profileimage: user.profileimage,
                     year: user.year,
                     interests: user.interests,
                     bio: user.bio,
@@ -123,7 +182,7 @@ const profileController = {
     getUserProfile: async (req, res) => {
         try {
             const userId = req.params.userId;
-            const user = await User.findById(userId).select('-jwt -googleId -image.data');
+            const user = await User.findById(userId).select('-jwt -googleId');
             
             if (!user) {
                 return res.status(404).json({ error: 'User not found' });
@@ -137,7 +196,7 @@ const profileController = {
                     nickname: user.nickname,
                     isAdmin: user.isAdmin,
                     emojis: user.emojis,
-                    profileimage: user.profileimage,
+
                     year: user.year,
                     interests: user.interests,
                     bio: user.bio,
@@ -197,7 +256,7 @@ const profileController = {
                 req.user._id, 
                 updateData,
                 { new: true }
-            ).select('-jwt -googleId -image.data');
+            ).select('-jwt -googleId');
 
             res.json({ 
                 success: true, 
@@ -213,7 +272,7 @@ const profileController = {
 
     getAllUsers: async (req, res) => {
         try {
-            const users = await User.find({}).select('-jwt -googleId -image.data').sort({ createdAt: -1 });
+            const users = await User.find({}).select('-jwt -googleId').sort({ createdAt: -1 });
             
             res.json({
                 users: users.map(user => ({
